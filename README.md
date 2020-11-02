@@ -1,5 +1,6 @@
 # Voix
-Voicemeeter Banana web interface.
+Voicemeeter Potato web interface.
+For Voicemeeter Banana check out the repo i forked from: https://github.com/karlkoorna/voix
 
 ## Usage
 
