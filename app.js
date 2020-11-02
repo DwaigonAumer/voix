@@ -8,14 +8,16 @@ const vm = require('./build/Release/vm.node');
 const config = require('./config.json');
 const binds = fs.readFileSync('binds.txt').toString().split('\n');
 
+const stripAmount = 12;
+
 // Voiceemeter
 
 vm.load(config.dll);
 vm.login();
 
-if (vm.getType() !== 2) {
+if (vm.getType() !== 3) {
 	vm.logout();
-	console.error('Voicemeeter Banana is not running!');
+	console.error('Voicemeeter Potato is not running!');
 	process.exit(1);
 }
 
@@ -34,26 +36,52 @@ app.listen(config.port, config.host, (err) => {
 // WS
 
 const wss = new ws.Server({ port: config.port + 1 });
-const state = { levels: new Array(20).fill(0) };
+const state = { levels: new Array(30).fill(0) };
 let lastState = {};
 
 setInterval(() => {
-	const levels = new Array(20).fill(0);
-	for (let i = 0; i < 8; i++) levels[i] = vm.getLevel(1, i);
+	const levels = new Array(30).fill(0);
+	for (let i = 0; i < stripAmount; i++) levels[i] = vm.getLevel(1, i);
+
+	// Voicemeeter AUX
+	levels[12] = vm.getLevel(1, 18);
+	levels[13] = vm.getLevel(1, 19);
+
+	// VAIO 3
+	levels[14] = vm.getLevel(1, 26);
+	levels[15] = vm.getLevel(1, 27);
+
+	// A1
+	levels[16] = vm.getLevel(3, 0);
+	levels[17] = vm.getLevel(3, 1);
+
+	// A2
+	levels[18] = vm.getLevel(3, 8);
+	levels[19] = vm.getLevel(3, 9);
+
+	// A3
+	levels[20] = vm.getLevel(3, 16);
+	levels[21] = vm.getLevel(3, 17);
+
+	// A4
+	levels[22] = vm.getLevel(3, 24);
+	levels[23] = vm.getLevel(3, 25);
+
+	// A5
+	levels[24] = vm.getLevel(3, 32);
+	levels[25] = vm.getLevel(3, 33);
 	
-	levels[8] = vm.getLevel(1, 14);
-	levels[9] = vm.getLevel(1, 15);
-	
-	levels[10] = vm.getLevel(3, 0);
-	levels[11] = vm.getLevel(3, 1);
-	levels[12] = vm.getLevel(3, 8);
-	levels[13] = vm.getLevel(3, 9);
-	levels[14] = vm.getLevel(3, 16);
-	levels[15] = vm.getLevel(3, 17);
-	levels[16] = vm.getLevel(3, 24);
-	levels[17] = vm.getLevel(3, 25);
-	levels[18] = vm.getLevel(3, 32);
-	levels[19] = vm.getLevel(3, 33);
+	// B1
+	levels[26] = vm.getLevel(3, 41);
+	levels[27] = vm.getLevel(3, 42);
+
+	// B2
+	levels[28] = vm.getLevel(3, 49);
+	levels[29] = vm.getLevel(3, 50);
+
+	// B3
+	levels[30] = vm.getLevel(3, 57);
+	levels[31] = vm.getLevel(3, 58);
 	
 	for (const i in levels) state.levels[i] += levels[i] > state.levels[i] && levels[i] > 0 ? levels[i] - state.levels[i] : -.056;
 	if (vm.isDirty()) for (const bind of binds.slice(0, -1)) state[bind] = vm.getFloat(bind);
@@ -62,7 +90,7 @@ setInterval(() => {
 	for (const key in state) if (state[key] !== lastState[key]) changes[key] = state[key];
 	lastState = { ...state };
 	
-	for (const client of wss.clients) if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(changes));
+	for (const client of wss.clients) if (client.readyState === ws.OPEN) client.send(JSON.stringify(changes));
 }, 5);
 
 wss.on('connection', (socket) => {
